@@ -32,7 +32,6 @@ def agi_say(string):
 	#remove the final file too
 	subprocess.call(["rm", "-f", filepath])
 
-
 def setNonBlocking(fd):
     """
     Set the file description of the given file descriptor to non-blocking.

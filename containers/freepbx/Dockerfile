@@ -107,6 +107,9 @@ RUN pip3 install pyst2
 #java
 RUN apt-get install --no-install-recommends -y default-jdk
 
+#espeak
+RUN apt-get install --no-install-recommends -y espeak
+
 # Cleanup
 RUN apt-get clean && \
     apt-get autoremove -y
@@ -117,11 +120,25 @@ ADD backup.sh /
 ADD delete-old-recordings.sh /
 COPY basic-config.tar.gz /
 ADD generate-sha1.php /
+COPY extensions_custom.conf /etc/asterisk
+RUN chown asterisk:asterisk /etc/asterisk/extensions_custom.conf
 
 ADD index.html /var/www/html/
 
 #avoid taking too much to start by setting permissions (in container, no one will change files...)
 ADD freepbx_chown.conf /etc/asterisk/
+
+
+#setup game2asterisk directories
+RUN mkdir /var/lib/asterisk/agi-bin/game2asterisk
+
+COPY game/gametest.py /var/lib/asterisk/agi-bin/game2asterisk/gametest.py
+RUN chmod +x /var/lib/asterisk/agi-bin/game2asterisk/gametest.py
+COPY game/rng_game.py /var/lib/asterisk/agi-bin/game2asterisk/rng_game.py
+COPY game/rng_game.json /var/lib/asterisk/agi-bin/game2asterisk/rng_game.json
+
+RUN mkdir /var/lib/asterisk/sounds/en/nr_game2asterisk
+
 
 #enable https in admin
 RUN a2ensite default-ssl && \

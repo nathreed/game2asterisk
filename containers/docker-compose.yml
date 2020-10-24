@@ -2,12 +2,7 @@ version: '3.3'
 services:
   freepbx:
     build: ./freepbx
-    ports:
-      - 8080:80
-      - 5060:5060/udp
-      - 5160:5160/udp
-      - 3306:3306
-      - 10000-20000:10000-20000/udp
+    network_mode: host
     restart: always
     environment:
       - ADMIN_PASSWORD=admin123
