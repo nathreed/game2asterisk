@@ -1,0 +1,9 @@
+{
+  "readers": [
+    {
+      "regex": "Pick a number",
+      "toRead": "num"
+    }
+  ],
+  "target": ["python3", "rng_game.py"]
+}

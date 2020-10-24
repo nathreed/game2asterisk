@@ -7,29 +7,6 @@ import threading
 import fcntl
 import os
 
-agi = AGI()
-
-#function to say AGI stuff over the line
-def agi_say(string):
-	#construct the command to render the speech and another command to resample it
-	#will name the file with the callerid of the caller
-	filename = "nr_game2asterisk/" + agi.env["agi_callerid"]
-	filepath = "/var/lib/asterisk/sounds/en/nr_game2asterisk/" + agi.env["agi_callerid"] + ".wav"
-	#use filename.wav.i for "incomplete"
-	espeak_cmd = "espeak -w " + filepath + ".i \"" + string + "\""
-	sox_cmd = "sox " + filepath + ".i" + "-r 8000 " + filepath
-
-	#execute the processes
-	subprocess.call(["espeak", "-w " + filepath + ".i", "\"" + string + "\""])
-	subprocess.call(["sox", filepath + ".i", "-r", "8000", filepath])
-	#remove the intermediate one
-	subprocess.call(["rm", "-f", filepath + ".i"])
-
-	#send the file over the connection
-	agi.stream_file(filename)
-
-	#remove the final file too
-	subprocess.call(["rm", "-f", filepath])
 
 def setNonBlocking(fd):
     """
@@ -43,17 +20,45 @@ def setNonBlocking(fd):
 parsed = {}
 
 #Open and parse the input json file
-with open("/var/lib/asterisk/agi-bin/game2asterisk/rng_game.json", "r") as file:
+with open("rng_game.json", "r") as file:
 	data = file.read()
 	parsed = json.loads(data)
 
 def execute_action(action):
 	if action == "num":
-		return agi.wait_for_digit(-1)
-		#return input("Fake AGI asking for number: ")
+		return input("Fake AGI asking for number: ")
+
+
+#Launch the target
+#redirect stderr to agi_verbose
+#thread will exit when we get an empty bytestring which we get after the child exits
+def stderr_redir(proc):
+	for line in iter(proc.stderr.readline, b''):
+		#agi.verbose("[PY AGI CHILD STDERR] " + line)
+		print("[CHILD STDERR] " + str(line))
+
+
+#Helper output reader that will run on another thread
+def output_reader(proc):
+	#got line from program - check if it matches anything we are looking for
+	#if it does, do the appropriate command and get the result back
+	for line in iter(proc.stdout.readline, b''):
+		print("[CHILD STDOUT] " + str(line))
+		for reader in parsed["readers"]:
+			if(re.search(reader["regex"], str(line)) != None):
+				#found the match we were looking for
+				#execute the specified action and pipe the result back into the process
+				result = execute_action(reader["toRead"])
+				#agi.verbose("got action result" + str(result))
+				print("got action result" + str(result))
+				proc.stdin.write(str(result) + "\n")
+				proc.stdin.flush()
+				break #done going over the readers for this line of program output, wait for the next line
+
+
 
 def main():
-	agi.verbose("launch target " + str(parsed["target"]))
+	print("launch target " + str(parsed["target"]))
 	proc = subprocess.Popen(parsed["target"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
 
 	setNonBlocking(proc.stdout)
@@ -63,8 +68,7 @@ def main():
 		try:
 			out = proc.stdout.readline()
 			if(out != b''):
-				agi.verbose("GOT DATA " + str(out))
-				agi_say(out.decode("utf-8").strip("\n"))
+				print("GOT DATA " + str(out))
 				out_str = str(out)
 				line = out_str
 				for reader in parsed["readers"]:
@@ -73,7 +77,7 @@ def main():
 						#execute the specified action and pipe the result back into the process
 						result = execute_action(reader["toRead"])
 						#agi.verbose("got action result" + str(result))
-						agi.verbose("got action result" + str(result))
+						print("got action result" + str(result))
 						proc.stdin.write(bytearray(str(result) + "\n", "utf-8"))
 						proc.stdin.flush()
 						break #done going over the readers for this line of program output, wait for the next line
