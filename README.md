@@ -1,4 +1,4 @@
-#game2asterisk
+# game2asterisk
 
 A bridge between text-based games (that use standard in and standard out) and the Asterisk IP PBX. Enables some text-based games to be played over a standard phone call without modification of the game itself. 
 
