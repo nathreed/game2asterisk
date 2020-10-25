@@ -2,11 +2,11 @@
   "readers": [
     {
       "regex": "Pick a number .*? 9",
-      "toRead": "num"
+      "action": "num"
     },
     {
     	"regex": "Pick a number .*? 20",
-    	"toRead": "multinum",
+    	"action": "multinum",
     	"inputHint": "Enter a number, followed by the pound key"
     }
   ],

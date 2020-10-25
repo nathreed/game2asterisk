@@ -58,7 +58,7 @@ def process_capture_string(replacement, matchObj):
 	return new_replacement
 
 def execute_action(reader, matchObj):
-	action = reader["toRead"]
+	action = reader["action"]
 	if action == "num":
 		return input("Fake AGI asking for number: ")
 	elif action == "multinum":
