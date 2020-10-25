@@ -2,7 +2,7 @@
   "readers": [
     {
       "comment": "regex matches the course listings in the output. use transformer to read out loud with modified format",
-      "regex": "([1-9]+?\\.) .*",
+      "regex": "^([1-9]+?\\.) .*",
       "toRead": "noop",
       "outputTransformers": [{
         "type": "replace",
@@ -37,9 +37,41 @@
       "inputHint": "For a computer opponent, press 1. For no computer opponent, press 0.",
       "inputTransformers": [{
         "type": "digitStrMapping",
-        "mappings": [{"1": "y"}, {"0": "n"}]
+        "mappings": {"1": "y", "0": "n"}
       }]
-    }
+    },
+    {
+      "comment": "regex matches the enter name prompt and completely erases it and uses just numbers",
+      "regex": ".*? name for player ([0-9]+)",
+      "toRead": "processedLiteralReturn",
+      "literal": "${1}",
+      "outputTransformers": [{
+        "type": "replaceEntireString",
+        "replacementValue": ""
+      }]
+    },
+    {
+      "comment": "regex matches the club chooser prompt and tells the user to enter a number appropriately",
+      "regex": ".*?club (\\[([0-9]+)\\-([0-9]+)\\]\\:)",
+      "toRead": "multinum",
+      "inputHint": "Enter a number from ${2} to ${3} followed by the pound key.",
+      "outputTransformers": [{
+        "type": "replace",
+        "captureGroup": 1,
+        "replacementValue": ""
+      }]
+    },
+    {
+      "comment": "regex matches the power chooser prompt and tells the user to enter a number appropriately",
+      "regex": ".*?Power (\\[([0-9]+)\\-([0-9]+)\\]\\:)",
+      "toRead": "multinum",
+      "inputHint": "Enter a number from ${2} to ${3} followed by the pound key.",
+      "outputTransformers": [{
+        "type": "replace",
+        "captureGroup": 1,
+        "replacementValue": "Choose your power"
+      }]
+    },
     {
       "comment": "regex matches the do you want to play again question. Use transformer to change the y/n to a nicer format and uses input transformer to read that format.",
       "regex": ".*? play again (\\(y/n\\)\\?)",
@@ -52,7 +84,7 @@
       "inputHint": "To play again, press 1. To quit, press 0.",
       "inputTransformers": [{
         "type": "digitStrMapping",
-        "mappings": [{"1": "y"}, {"0": "n"}]
+        "mappings": {"1": "y", "0": "n"}
       }]
     }
   ],

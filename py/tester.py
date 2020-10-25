@@ -39,13 +39,36 @@ with open("tty_golf.json", "r") as file:
 	data = file.read()
 	parsed = json.loads(data)
 
-def execute_action(action):
+
+#a better name for replacement is "line" or "string" but I don't have good automated refactor tools
+def process_capture_string(replacement, matchObj):
+	new_replacement = ""
+	last_replacement_last_index = 0
+	for repMatch in re.finditer("\${([0-9]*)}", replacement):
+		#we will build up the new replacement little by little
+		#start from the end index of the last match and just add the unmatched text until the beginning of this match
+		new_replacement += replacement[last_replacement_last_index:repMatch.start()]
+		#now add the replacement value that we calculated - the xth match from the original match object
+		orig_index = int(repMatch.group(1))
+		new_replacement += matchObj.group(orig_index)
+		#and store the last index of this match so that we can build it up properly in the next iteration
+		last_replacement_last_index = repMatch.end()
+	#Need to do one more concatenation to get the rest of the stuff after the last ${x} occurrence
+	new_replacement += replacement[last_replacement_last_index:len(replacement)]
+	return new_replacement
+
+def execute_action(reader, matchObj):
+	action = reader["toRead"]
 	if action == "num":
 		return input("Fake AGI asking for number: ")
 	elif action == "multinum":
 		return agi_get_multi_digit()
 	elif action == "noop":
 		return None
+	elif action == "processedLiteralReturn":
+		#Need to process the given string to populate any ${x} syntax and then return it
+		processed = process_capture_string(reader["literal"], matchObj)
+		return processed
 	else:
 		#we have no idea what it should be because no regex matched
 		output("NO MATCH")
@@ -59,19 +82,7 @@ def apply_output_transformer(line, matchObj, transformer):
 		#So to effect that, first we will find those and replace them to construct the string
 		#Then we will put that string in the appropriate group
 		replacement = transformer["replacementValue"]
-		new_replacement = ""
-		last_replacement_last_index = 0
-		for repMatch in re.finditer("\${([0-9]*)}", replacement):
-			#we will build up the new replacement little by little
-			#start from the end index of the last match and just add the unmatched text until the beginning of this match
-			new_replacement += replacement[last_replacement_last_index:repMatch.start()]
-			#now add the replacement value that we calculated - the xth match from the original match object
-			orig_index = int(repMatch.group(1))
-			new_replacement += matchObj.group(orig_index)
-			#and store the last index of this match so that we can build it up properly in the next iteration
-			last_replacement_last_index = repMatch.end()
-		#Need to do one more concatenation to get the rest of the stuff after the last ${x} occurrence
-		new_replacement += replacement[last_replacement_last_index:len(replacement)]
+		new_replacement = process_capture_string(replacement, matchObj)
 
 		output("calculated replacement string: " + new_replacement)
 
@@ -83,17 +94,23 @@ def apply_output_transformer(line, matchObj, transformer):
 
 		return new_line
 	elif transformer["type"] == "replaceEntireString":
-		return transformer["replacementValue"]
+		return process_capture_string(transformer["replacementValue"], matchObj)
 
 	else:
 		output("UNKNOWN OUTPUT TRANSFORMER TYPE!")
 		return line
 
 
-def apply_input_transformers(line, transformer):
+def apply_input_transformer(line, transformer):
 	if transformer["type"] == "digitStrMapping":
-		print("not yet implemented")
-		return line
+		#the line is going to be a string of the digit(s) we got back from the user
+		#apply this to the mapping and return the correct string out
+		try:
+			result = transformer["mappings"][line]
+			return result
+		except KeyError:
+			output("NO SUCH MAPPING FOR INPUT " + line) 
+			return line
 	else:
 		output("UNKNOWN INPUT TRANSFORMER TYPE!")
 		return line
@@ -101,15 +118,14 @@ def apply_input_transformers(line, transformer):
 
 def main():
 	output("launch target " + str(parsed["target"]))
-	#Need a high bufsize (2048 or higher) to absorb issues caused by java output buffering (at least on testing system)
-	proc = subprocess.Popen(parsed["target"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=4096)
+	proc = subprocess.Popen(parsed["target"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1024)
 
 	setNonBlocking(proc.stdout)
 	setNonBlocking(proc.stderr)
 
 	cur_output = b""
-	#nasty hack - if the input doesn't change for 20 iterations, then go with it
-	remaining_iterations = 20
+	#nasty hack - if the input doesn't change for 25 iterations, then go with it
+	remaining_iterations = 25
 	while True:
 		try:
 			#ready_output = proc.stdout.readline()
@@ -148,11 +164,13 @@ def main():
 						#execute the specified action and pipe the result back into the process
 						#Read the input hint if it exists
 						try:
-							agi_say(reader["inputHint"])
+							#input hints also need to be processed because they support the ${x} syntax as well
+							processed = process_capture_string(reader["inputHint"], match)
+							agi_say(processed)
 						except KeyError:
 							pass
 
-						result = execute_action(reader["toRead"])
+						result = execute_action(reader, match)
 
 						if result == None: #for noops
 							break
@@ -162,7 +180,7 @@ def main():
 						try:
 							#Apply input transformers one after the other on the user input
 							for transformer in reader["inputTransformers"]:
-								result = apply_input_transformer(str(result))
+								result = apply_input_transformer(str(result), transformer)
 						except KeyError:
 							pass
 
