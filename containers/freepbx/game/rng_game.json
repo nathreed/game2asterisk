@@ -1,9 +1,0 @@
-{
-  "readers": [
-    {
-      "regex": "Pick a number",
-      "toRead": "num"
-    }
-  ],
-  "target": ["python3", "/var/lib/asterisk/agi-bin/game2asterisk/rng_game.py"]
-}
