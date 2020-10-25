@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+#Tester.py: Run adapted games in a terminal with stubbed AGI calls for testing purposes
 import json
 import re
 from asterisk.agi import *

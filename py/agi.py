@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+#agi.py: this is the final AGI script that gets placed on the Asterisk server.
 import json
 import re
 from asterisk.agi import *
