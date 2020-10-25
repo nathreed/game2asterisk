@@ -32,6 +32,10 @@ def agi_say(string):
 	#remove the final file too
 	subprocess.call(["rm", "-f", filepath])
 
+def agi_get_multi_digit():
+	#we play a silence because we have to play something i think
+	result = agi.get_data("silence/1", timeout=-1)
+	return int(result)
 
 def setNonBlocking(fd):
     """
@@ -53,6 +57,12 @@ def execute_action(action):
 	if action == "num":
 		return agi.wait_for_digit(-1)
 		#return input("Fake AGI asking for number: ")
+	elif action == "multinum":
+		return agi_get_multi_digit()
+	else:
+		#no idea
+		agi_say("I don't know what kind of input you should enter. Guessing a number.")
+		return agi.wait_for_digit(-1)
 
 def main():
 	agi.verbose("launch target " + str(parsed["target"]))
@@ -72,6 +82,11 @@ def main():
 				for reader in parsed["readers"]:
 					if(re.search(reader["regex"], str(line)) != None):
 						#found the match we were looking for
+						#Read the input hint if it exists
+						try:
+							agi_say(reader["inputHint"])
+						except KeyError:
+							pass
 						#execute the specified action and pipe the result back into the process
 						result = execute_action(reader["toRead"])
 						#agi.verbose("got action result" + str(result))

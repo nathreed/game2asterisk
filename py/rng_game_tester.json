@@ -1,0 +1,14 @@
+{
+  "readers": [
+    {
+      "regex": "Pick a number .*? 9",
+      "toRead": "num"
+    },
+    {
+    	"regex": "Pick a number .*? 20",
+    	"toRead": "multinum",
+    	"inputHint": "Enter a number, followed by the pound key"
+    }
+  ],
+  "target": ["python3", "rng_game.py"]
+}

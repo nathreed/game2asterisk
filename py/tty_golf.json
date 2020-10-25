@@ -1,0 +1,60 @@
+{
+  "readers": [
+    {
+      "comment": "regex matches the course listings in the output. use transformer to read out loud with modified format",
+      "regex": "([1-9]+?\\.) .*",
+      "toRead": "noop",
+      "outputTransformers": [{
+        "type": "replace",
+        "captureGroup": 1,
+        "replacementValue": "Press ${1} for "
+      }]
+    },
+    {
+      "comment": "part 2 of the course selection. Use output transformer to replace the entire thing with empty but still prompt for a number",
+      "regex": "Your choice",
+      "toRead": "num",
+      "outputTransformers": [{
+        "type": "replaceEntireString",
+        "replacementValue": ""
+      }]
+    },
+    {
+      "comment": "regex matches the how many players will be playing question. Need to use a mulitnum with an input hint because there is no limit to the number of players",
+      "regex": "How many players",
+      "toRead": "multinum",
+      "inputHint": "Enter a number followed by the pound key."
+    },
+    {
+      "comment": "regex matches question about computer opponent. Use output transformer to change the y/n and use input transformer to read 1/0 for y/n",
+      "regex": ".*? computer opponent (\\[y/n\\]\\?)",
+      "toRead": "num",
+      "outputTransformers": [{
+        "type": "replace",
+        "captureGroup": 1,
+        "replacementValue": "?"
+      }],
+      "inputHint": "For a computer opponent, press 1. For no computer opponent, press 0.",
+      "inputTransformers": [{
+        "type": "digitStrMapping",
+        "mappings": [{"1": "y"}, {"0": "n"}]
+      }]
+    }
+    {
+      "comment": "regex matches the do you want to play again question. Use transformer to change the y/n to a nicer format and uses input transformer to read that format.",
+      "regex": ".*? play again (\\(y/n\\)\\?)",
+      "toRead": "num",
+      "outputTransformers": [{
+        "type": "replace",
+        "captureGroup": 1,
+        "replacementValue": "?"
+      }],
+      "inputHint": "To play again, press 1. To quit, press 0.",
+      "inputTransformers": [{
+        "type": "digitStrMapping",
+        "mappings": [{"1": "y"}, {"0": "n"}]
+      }]
+    }
+  ],
+  "target": ["java", "-cp", "golf/", "Main"]
+}
