@@ -2,6 +2,10 @@
 
 A bridge between text-based games (that use standard in and standard out) and the Asterisk IP PBX. Enables some text-based games to be played over a standard phone call without modification of the game itself. 
 
+## Demo video
+
+https://youtu.be/QEmyDfYs1sM
+
 ## Principle of operation
 
 Most text-based games have common elements, such as entering a number, answering a y/n prompt, or typing a predefined command to change the game state. `game2asterisk` will, when supplied with a file indicating how the text-based interface should be adapted to the phone environment, enable the user to play the game over the phone. To enable a game to work with `game2asterisk`, the user must write a JSON file describing the different prompts the game uses to ask for output and telling `game2asterisk` what kind of input to read from the user. Additionally, this JSON file can specify various transformations that should occur on the game's output before it is read out to the user and/or on the user's input before it is fed to the game.
@@ -18,7 +22,7 @@ Here is an example of a basic JSON file that tells `game2asterisk` how to adapt 
   "readers": [
     {
       "regex": "Pick a number .*? 9",
-      "toRead": "num"
+      "action": "num"
     },
     {
     	"regex": "Pick a number .*? 20",
